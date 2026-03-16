@@ -7,10 +7,17 @@ app.set("view engine", "ejs");
 app.use(require("body-parser").urlencoded({ extended: true }));
 
 require("dotenv").config(); // to load the .env file into the process.env object
+const helmet = require("helmet");
+const xss = require("xss-clean");
+const rateLimit = require("express-rate-limit");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
 const url = process.env.MONGO_URI;
 const authMiddleware = require("./middleware/auth");
+const cookieParser = require("cookie-parser");
+const csrf = require("host-csrf");
+app.use(cookieParser(process.env.SESSION_SECRET));
+const csrfMiddleware = csrf.csrf();
 
 const store = new MongoDBStore({
   // may throw an error, which won't be caught
@@ -34,6 +41,10 @@ if (app.get("env") === "production") {
   sessionParms.cookie.secure = true; // serve secure cookies
 }
 
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
+app.use(helmet());
+app.use(xss());
+
 app.use(session(sessionParms));
 
 const passport = require("passport");
@@ -42,6 +53,12 @@ const passportInit = require("./passport/passportInit");
 passportInit();
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use(csrfMiddleware);
+app.use((req, res, next) => {
+  res.locals._csrf = csrf.getToken(req, res);
+  next();
+});
 
 app.use(require("connect-flash")());
 app.use(require("./middleware/storeLocals"));
@@ -52,6 +69,10 @@ app.use("/sessions", require("./routes/sessionRoutes"));
 // secret word handling
 const secretWordRouter = require("./routes/secretWord");
 app.use("/secretWord", authMiddleware, secretWordRouter);
+
+const jobsRouter = require("./routes/jobs");
+app.use("/jobs", authMiddleware, jobsRouter);
+
 app.use((req, res) => {
   res.status(404).send(`That page (${req.url}) was not found.`);
 });
