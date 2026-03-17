@@ -13,7 +13,7 @@ const showUpdate = async (req, res) => {
   });
   if (!job) {
     req.flash("error", `No job with id ${req.params.id} found`);
-    return res.render("index", { errors: req.flash("error") });
+    return res.status(400).render("index", { errors: req.flash("error") });
   }
   res.render("job", { job });
 };
@@ -28,7 +28,9 @@ const createJob = async (req, res) => {
     } else {
       throw e;
     }
-    return res.render("job", { job: null, errors: req.flash("error") });
+    return res
+      .status(400)
+      .render("job", { job: null, errors: req.flash("error") });
   }
   res.redirect("/jobs");
 };
@@ -37,7 +39,7 @@ const updateJob = async (req, res) => {
   const { company, position } = req.body;
   if (!company || !position) {
     req.flash("error", "Company and position fields must not be empty");
-    return res.render("index", { errors: req.flash("error") });
+    return res.status(400).render("index", { errors: req.flash("error") });
   }
   const job = await Job.findOneAndUpdate(
     { _id: req.params.id, createdBy: req.user._id },
@@ -46,7 +48,7 @@ const updateJob = async (req, res) => {
   );
   if (!job) {
     req.flash("error", `No job with id ${req.params.id} found`);
-    return res.render("index", { errors: req.flash("error") });
+    return res.status(400).render("index", { errors: req.flash("error") });
   }
   res.redirect("/jobs");
 };
@@ -58,7 +60,7 @@ const deleteJob = async (req, res) => {
   });
   if (!job) {
     req.flash("error", `No job with id ${req.params.id} found`);
-    return res.render("index", { errors: req.flash("error") });
+    return res.status(400).render("index", { errors: req.flash("error") });
   }
   res.redirect("/jobs");
 };
