@@ -65,6 +65,16 @@ app.use((req, res, next) => {
 
 app.use(require("connect-flash")());
 app.use(require("./middleware/storeLocals"));
+
+app.use((req, res, next) => {
+  if (req.path == "/multiply") {
+    res.set("Content-Type", "application/json");
+  } else {
+    res.set("Content-Type", "text/html");
+  }
+  next();
+});
+
 app.get("/", (req, res) => {
   res.render("index");
 });
@@ -75,6 +85,16 @@ app.use("/secretWord", authMiddleware, secretWordRouter);
 
 const jobsRouter = require("./routes/jobs");
 app.use("/jobs", authMiddleware, jobsRouter);
+
+app.get("/multiply", (req, res) => {
+  const result = req.query.first * req.query.second;
+  if (result.isNaN) {
+    result = "NaN";
+  } else if (result == null) {
+    result = "null";
+  }
+  res.json({ result: result });
+});
 
 app.use((req, res) => {
   res.status(404).send(`That page (${req.url}) was not found.`);
@@ -99,3 +119,5 @@ const start = async () => {
 };
 
 start();
+
+module.exports = { app };
